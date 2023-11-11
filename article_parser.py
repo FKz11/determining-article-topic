@@ -6,12 +6,12 @@ ARTICLE_URL_TEMPLATE = 'https://habr.com/ru/articles/{}/'
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
 
-def get_article(article_id):
+def get_article(article_id, log):
     # выгрузка документа
     r = requests.get(ARTICLE_URL_TEMPLATE.format(article_id), headers=HEADERS)
 
     if r.status_code != 200:
-        print('Status code is not ok:', r.status_code)
+        log.warning('Returned status code {} for article {}'.format(r.status_code, article_id))
 
     # парсинг документа
     soup = BeautifulSoup(r.text, 'html5lib') # instead of html.parser
