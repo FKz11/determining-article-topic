@@ -22,6 +22,8 @@ pandas = "^2.1.4"
 numpy = "^1.26.3"
 scikit-learn = "^1.3.2"
 python-telegram-bot = "^20.7"
+fastparquet = "^2023.10.1"
+dvc = "^3.39.0"
 
 
 [build-system]
