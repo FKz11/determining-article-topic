@@ -1,6 +1,7 @@
 venv/
 .idea/
 *.csv
+*.parquet
 *.pth
 private.py
 # Byte-compiled / optimized / DLL files

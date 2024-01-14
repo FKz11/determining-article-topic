@@ -1,0 +1,5 @@
+outs:
+- md5: 349ec7c6a737f50739f25a2ec598674f
+  size: 335879433
+  hash: md5
+  path: df_train.parquet
