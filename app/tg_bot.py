@@ -7,10 +7,14 @@ import pickle
 import torch
 import boto3
 
-from config import VERSION, NUM_HUBS, BUCKET
-from model_class import Model_hubs
-from preprocessing import del_puncts, get_tokens
-from private import s3_access_key, s3_secret_key
+from app.config import VERSION, NUM_HUBS, BUCKET
+from app.model_class import Model_hubs
+from app.preprocessing import del_puncts, get_tokens
+from app.private import s3_access_key, s3_secret_key
+
+import __main__
+
+setattr(__main__, "Model_hubs", Model_hubs)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -42,7 +46,18 @@ markup = InlineKeyboardMarkup(keyboard)
 
 
 async def start(update, context):
-    message = (f'Готов к работе!')
+    message = 'Готов к работе!'
+    await update.message.reply_text(message)
+
+
+async def help(update, context):
+    message = """Привет! Я бот помогающий подобрать соответствующие хабы для статьи на сайте https://habr.com
+Отпрвь мне статью и я предложу топ-5 наиболее подходящих хабов!
+- Чтобы изменить количество рекомендуемых хабов воспользуйся командой: /change_num_hubs <желаемое количество хабов>
+- Для просмотра текущего рейтинга рекомендаций бота, \
+посчитанного по отзывам пользователей, воспользуйся командой: /rating
+- Если статья объёмная, отправь текстовый файл со статьёй внутри
+Хорошего пользования!"""
     await update.message.reply_text(message)
 
 
@@ -53,7 +68,7 @@ async def change_num_hubs(update, context):
         assert num_hubs > 0
         context.chat_data['num_hubs'] = num_hubs
         message = f'Отлично, количество рекомендуемых хабов изменилось на {num_hubs}!'
-    except:
+    except Exception:
         message = 'Произошла ошибка, попробуйте ещё раз в формате: /change_num_hubs <желаемое количество хабов>'
     await update.message.reply_text(message)
 
@@ -78,7 +93,7 @@ async def predict_file(update, context):
             text = f.read()
         os.remove("cache/file.txt")
         file2text_flag = True
-    except:
+    except Exception:
         message = 'Произошла ошибка, попробуйте ещё раз, проверьте, что вы отправляете текстовый файл (.txt)'
         await update.message.reply_text(message)
     if file2text_flag:
@@ -100,18 +115,21 @@ async def button_click(update, context):
 
 
 async def rating(update, context):
+    feedback = json.loads(s3_client.get_object(Bucket=BUCKET, Key="feedback.json").get('Body').read())
     num_feedbacks = sum([v for k, v in feedback.items()])
     if num_feedbacks == 0:
         message = 'Пока нету ни одного отзыва о рекомендациях, стань первым!'
     else:
         rating_score = sum([int(k) * int(v) for k, v in feedback.items()]) / num_feedbacks
-        message = f'Текущей рейтинг рекомендаций бота, основанный на {num_feedbacks} отзывах пользователей:\n{rating_score}'
+        message = f'Текущей рейтинг рекомендаций бота, \
+основанный на {num_feedbacks} отзывах пользователей:\n{rating_score}'
     await update.message.reply_text(message)
 
 
 def main():
     application = Application.builder().token(TOKEN_TELEGRAM_API).build()
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help))
     application.add_handler(CommandHandler("change_num_hubs", change_num_hubs))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, predict))
     application.add_handler(MessageHandler(filters.Document.ALL, predict_file))

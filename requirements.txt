@@ -5,6 +5,10 @@ boto3
 pandas
 numpy
 torch
-scikit-learn
+scikit-learn==1.3.2
 python-telegram-bot
 pymorphy2
+pytest
+pytest-asyncio
+coverage
+flake8
