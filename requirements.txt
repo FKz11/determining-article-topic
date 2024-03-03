@@ -12,3 +12,7 @@ pytest
 pytest-asyncio
 coverage
 flake8
+fasttext-wheel
+mlflow
+dvc-s3
+gensim
