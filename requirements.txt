@@ -16,3 +16,7 @@ fasttext-wheel
 mlflow
 dvc-s3
 gensim
+uvicorn
+fastapi
+aioredis
+python-multipart
