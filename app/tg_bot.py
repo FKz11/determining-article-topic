@@ -25,6 +25,7 @@ s3_client = boto3.client(
 
 TOKEN_TELEGRAM_API = s3_client.get_object(Bucket=BUCKET, Key="secrets/tg_bot/token.txt").get('Body').read().decode()
 
+
 keyboard = [
     [InlineKeyboardButton("0️⃣", callback_data='0'),
      InlineKeyboardButton("1️⃣", callback_data='1'),
