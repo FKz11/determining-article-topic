@@ -1,10 +1,11 @@
 import pytest
 from unittest.mock import AsyncMock
 
+import os
 import json
 import boto3
+import requests
 
-from app.private import s3_access_key, s3_secret_key
 from app.config import NUM_HUBS, BUCKET
 
 # тестирующиеся функции ТГ-бота
@@ -16,6 +17,9 @@ from app.tg_bot import predict_file
 from app.tg_bot import button_click
 from app.tg_bot import rating
 
+s3_access_key = os.getenv("S3_ACCESS_KEY")
+s3_secret_key = os.getenv("S3_SECRET_KEY")
+
 
 class MessageMock(AsyncMock):
 
@@ -23,22 +27,10 @@ class MessageMock(AsyncMock):
         self.text = message
 
 
-class FileMock(AsyncMock):
-
-    def __init__(self, to_path, *args, **kwargs):
-        super().__init__()
-        self.from_path = to_path
-
-    async def download_to_drive(self, to_path, *args, **kwargs):
-        with open(self.from_path, 'r') as f_r:
-            with open(to_path, 'w') as f_w:
-                f_w.write(f_r.read())
-
-
 class BotMock(AsyncMock):
 
     async def get_file(self, to_path, *args, **kwargs):
-        return FileMock(to_path)
+        return {'file_path': to_path}
 
 
 @pytest.mark.asyncio
@@ -154,7 +146,11 @@ async def test_predict_file():
     context.chat_data = dict()
     context.bot = BotMock()
     update.message = MessageMock()
-    update.message.document = 'test_input_empty.txt'
+    file_path = 'test_input_empty.txt'
+    with open(file_path, 'rb') as file:
+        response = requests.post('https://file.io/', files={'file': file})
+    response = response.json()
+    update.message.document = response['link']
     await predict_file(update, context)
     num_hubs = context.chat_data.get('num_hubs', NUM_HUBS)
     output_text = update.message.text
@@ -167,7 +163,11 @@ async def test_predict_file():
     context = AsyncMock()
     context.chat_data = dict()
     context.bot = BotMock()
-    update.message.document = 'test_input_extension.png'
+    file_path = 'test_input_extension.png'
+    with open(file_path, 'rb') as file:
+        response = requests.post('https://file.io/', files={'file': file})
+    response = response.json()
+    update.message.document = response['link']
     await predict_file(update, context)
     update.message.reply_text.assert_called_once_with(
         'Произошла ошибка, попробуйте ещё раз, проверьте, что вы отправляете текстовый файл (.txt)')
@@ -179,7 +179,11 @@ async def test_predict_file():
     context.chat_data['num_hubs'] = 1
     context.bot = BotMock()
     update.message = MessageMock()
-    update.message.document = 'test_input_real.txt'
+    file_path = 'test_input_real.txt'
+    with open(file_path, 'rb') as file:
+        response = requests.post('https://file.io/', files={'file': file})
+    response = response.json()
+    update.message.document = response['link']
     await predict_file(update, context)
     num_hubs = context.chat_data.get('num_hubs', NUM_HUBS)
     output_text = update.message.text
