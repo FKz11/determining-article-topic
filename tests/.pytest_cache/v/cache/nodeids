@@ -1,9 +1,0 @@
-[
-  "test_tg_bot.py::test_button_click",
-  "test_tg_bot.py::test_change_num_hubs",
-  "test_tg_bot.py::test_help",
-  "test_tg_bot.py::test_predict",
-  "test_tg_bot.py::test_predict_file",
-  "test_tg_bot.py::test_rating",
-  "test_tg_bot.py::test_start"
-]

@@ -3,10 +3,10 @@ from enum import Enum
 import uvicorn
 from aioredis import Redis
 import hashlib
-import json
 from pydantic import BaseModel
 from typing import List
 
+import os
 import io
 import json
 import pickle
@@ -14,11 +14,13 @@ import torch
 import boto3
 
 from config import VERSION, NUM_HUBS, BUCKET
-from model_class import Model_hubs
+from model_class import Model_hubs  # noqa: F401
 from preprocessing import del_puncts, get_tokens
-from private import s3_access_key, s3_secret_key
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+s3_access_key = os.getenv("S3_ACCESS_KEY")
+s3_secret_key = os.getenv("S3_SECRET_KEY")
 
 s3_client = boto3.client(
     service_name='s3',
@@ -36,7 +38,11 @@ id2hub = pickle.loads(s3_client.get_object(Bucket=BUCKET, Key=f"models/model_v{V
 feedback_s3 = json.loads(s3_client.get_object(Bucket=BUCKET, Key="feedback.json").get('Body').read())
 
 app = FastAPI()
-redis_client = Redis(host='redis', port=6379, db=0)
+
+if os.path.exists("/.dockerenv"):
+    redis_client = Redis(host='redis', port=6379, db=0)
+else:
+    redis_client = Redis(host='127.0.0.1', port=6379, db=0)
 
 
 class PredictRequest(BaseModel):
@@ -51,6 +57,16 @@ class PredictResponse(BaseModel):
 class PredictRequestFile(BaseModel):
     file: UploadFile = File(...)
     num_hubs: int = NUM_HUBS
+
+
+class RatingResponse(BaseModel):
+    rating: float
+    num_feedbacks: int
+
+
+class PingResponse(BaseModel):
+    message: str
+    active: bool
 
 
 class Button(str, Enum):
@@ -91,8 +107,11 @@ async def predict(request: PredictRequest):
 
 @app.post("/predict_file", response_model=PredictResponse)
 async def predict_file(file: UploadFile = File(...), num_hubs: int = NUM_HUBS):
-    text = await file.read()
-    text = text.decode('utf-8')
+    try:
+        text = await file.read()
+        text = text.decode('utf-8')
+    except Exception:
+        return PredictResponse(hubs=[])
 
     # Проверяем, есть ли ответ в кэше
     cache_key = generate_cache_key({'text': text, 'num_hubs': num_hubs})
@@ -115,26 +134,25 @@ async def predict_file(file: UploadFile = File(...), num_hubs: int = NUM_HUBS):
 
 @app.post("/feedback")
 async def feedback(button: Button) -> bool:
-    button = button
     feedback_s3[button] += 1
     s3_client.put_object(Bucket=BUCKET, Key="feedback.json", Body=json.dumps(feedback_s3))
     return True
 
 
-@app.get("/rating")
-async def rating() -> float:
+@app.get("/rating", response_model=RatingResponse)
+async def rating():
     feedback = json.loads(s3_client.get_object(Bucket=BUCKET, Key="feedback.json").get('Body').read())
     num_feedbacks = sum([v for k, v in feedback.items()])
     if num_feedbacks == 0:
-        rating = None
+        rating = 0.0
     else:
         rating = sum([int(k) * int(v) for k, v in feedback.items()]) / num_feedbacks
-    return rating
+    return RatingResponse(rating=rating, num_feedbacks=num_feedbacks)
 
 
-@app.get("/ping")
+@app.get("/ping", response_model=PingResponse)
 async def ping():
-    return {"message": "Сервис готов к работе!"}
+    return PingResponse(message="Сервис готов к работе!", active=True)
 
 
 if __name__ == "__main__":
