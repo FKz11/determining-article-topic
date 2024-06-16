@@ -8,7 +8,7 @@ import requests
 
 from app.config import NUM_HUBS, BUCKET
 
-# тестирующиеся функции ТГ-бота
+# тестирующиеся функции ТГ бота
 from app.tg_bot import start
 from app.tg_bot import help
 from app.tg_bot import change_num_hubs
@@ -30,7 +30,7 @@ class MessageMock(AsyncMock):
 class BotMock(AsyncMock):
 
     async def get_file(self, to_path, *args, **kwargs):
-        return {'file_path': to_path}
+        return {"file_path": to_path}
 
 
 @pytest.mark.asyncio
@@ -38,7 +38,7 @@ async def test_start():
     update = AsyncMock()
     context = AsyncMock()
     await start(update, context)
-    message = 'Готов к работе!'
+    message = "Готов к работе!"
     update.message.reply_text.assert_called_once_with(message)
 
 
@@ -61,35 +61,40 @@ async def test_help():
 async def test_change_num_hubs():
     update = AsyncMock()
     context = AsyncMock()
-    update.message.text = '/change_num_hubs 5'
+    update.message.text = "/change_num_hubs 5"
     context.chat_data = dict()
     await change_num_hubs(update, context)
     assert context.chat_data["num_hubs"] == 5
-    update.message.reply_text.assert_called_once_with('Отлично, количество рекомендуемых хабов изменилось на 5!')
+    update.message.reply_text.assert_called_once_with(
+        "Отлично, количество рекомендуемых хабов изменилось на 5!"
+    )
 
     update = AsyncMock()
     context = AsyncMock()
-    update.message.text = '/change_num_hubs -1'
+    update.message.text = "/change_num_hubs -1"
     context.chat_data = dict()
     await change_num_hubs(update, context)
     update.message.reply_text.assert_called_once_with(
-        'Произошла ошибка, попробуйте ещё раз в формате: /change_num_hubs <желаемое количество хабов>')
+        "Произошла ошибка, попробуйте ещё раз в формате: /change_num_hubs <желаемое количество хабов>"
+    )
 
     update = AsyncMock()
     context = AsyncMock()
-    update.message.text = '/change_num_hubs пять'
+    update.message.text = "/change_num_hubs пять"
     context.chat_data = dict()
     await change_num_hubs(update, context)
     update.message.reply_text.assert_called_once_with(
-        'Произошла ошибка, попробуйте ещё раз в формате: /change_num_hubs <желаемое количество хабов>')
+        "Произошла ошибка, попробуйте ещё раз в формате: /change_num_hubs <желаемое количество хабов>"
+    )
 
     update = AsyncMock()
     context = AsyncMock()
-    update.message.text = '/change_num_hubs'
+    update.message.text = "/change_num_hubs"
     context.chat_data = dict()
     await change_num_hubs(update, context)
     update.message.reply_text.assert_called_once_with(
-        'Произошла ошибка, попробуйте ещё раз в формате: /change_num_hubs <желаемое количество хабов>')
+        "Произошла ошибка, попробуйте ещё раз в формате: /change_num_hubs <желаемое количество хабов>"
+    )
 
 
 @pytest.mark.asyncio
@@ -99,42 +104,54 @@ async def test_predict():
     context = AsyncMock()
     context.chat_data = dict()
     update.message = MessageMock()
-    update.message.text = ''
+    update.message.text = ""
     await predict(update, context)
-    num_hubs = context.chat_data.get('num_hubs', NUM_HUBS)
+    num_hubs = context.chat_data.get("num_hubs", NUM_HUBS)
     output_text = update.message.text
-    output_text = output_text.removeprefix('Наиболее подходящие хабы для данной статьи:\n\n')
-    output_text = output_text.removesuffix('\n\nОцените пожалуйста результат рекомендации от 0 до 5:')
-    assert len(output_text.split('\n')) == num_hubs
+    output_text = output_text.removeprefix(
+        "Наиболее подходящие хабы для данной статьи:\n\n"
+    )
+    output_text = output_text.removesuffix(
+        "\n\nОцените пожалуйста результат рекомендации от 0 до 5:"
+    )
+    assert len(output_text.split("\n")) == num_hubs
 
     # проверка количества рекомендаций
     update = AsyncMock()
     context = AsyncMock()
     context.chat_data = dict()
-    context.chat_data['num_hubs'] = 7
+    context.chat_data["num_hubs"] = 7
     update.message = MessageMock()
-    update.message.text = ' '
+    update.message.text = " "
     await predict(update, context)
-    num_hubs = context.chat_data.get('num_hubs', NUM_HUBS)
+    num_hubs = context.chat_data.get("num_hubs", NUM_HUBS)
     output_text = update.message.text
-    output_text = output_text.removeprefix('Наиболее подходящие хабы для данной статьи:\n\n')
-    output_text = output_text.removesuffix('\n\nОцените пожалуйста результат рекомендации от 0 до 5:')
-    assert len(output_text.split('\n')) == num_hubs
+    output_text = output_text.removeprefix(
+        "Наиболее подходящие хабы для данной статьи:\n\n"
+    )
+    output_text = output_text.removesuffix(
+        "\n\nОцените пожалуйста результат рекомендации от 0 до 5:"
+    )
+    assert len(output_text.split("\n")) == num_hubs
 
     # проверка рекомендации
     update = AsyncMock()
     context = AsyncMock()
     context.chat_data = dict()
-    context.chat_data['num_hubs'] = 1
+    context.chat_data["num_hubs"] = 1
     update.message = MessageMock()
-    input_text = 'Астрономия'
+    input_text = "Астрономия"
     update.message.text = input_text
     await predict(update, context)
-    num_hubs = context.chat_data.get('num_hubs', NUM_HUBS)
+    num_hubs = context.chat_data.get("num_hubs", NUM_HUBS)
     output_text = update.message.text
-    output_text = output_text.removeprefix('Наиболее подходящие хабы для данной статьи:\n\n')
-    output_text = output_text.removesuffix('\n\nОцените пожалуйста результат рекомендации от 0 до 5:')
-    assert len(output_text.split('\n')) == num_hubs
+    output_text = output_text.removeprefix(
+        "Наиболее подходящие хабы для данной статьи:\n\n"
+    )
+    output_text = output_text.removesuffix(
+        "\n\nОцените пожалуйста результат рекомендации от 0 до 5:"
+    )
+    assert len(output_text.split("\n")) == num_hubs
     assert input_text == output_text
 
 
@@ -146,51 +163,60 @@ async def test_predict_file():
     context.chat_data = dict()
     context.bot = BotMock()
     update.message = MessageMock()
-    file_path = 'test_input_empty.txt'
-    with open(file_path, 'rb') as file:
-        response = requests.post('https://file.io/', files={'file': file})
+    file_path = "test_input_empty.txt"
+    with open(file_path, "rb") as file:
+        response = requests.post("https://file.io/", files={"file": file})
     response = response.json()
-    update.message.document = response['link']
+    update.message.document = response["link"]
     await predict_file(update, context)
-    num_hubs = context.chat_data.get('num_hubs', NUM_HUBS)
+    num_hubs = context.chat_data.get("num_hubs", NUM_HUBS)
     output_text = update.message.text
-    output_text = output_text.removeprefix('Наиболее подходящие хабы для данной статьи:\n\n')
-    output_text = output_text.removesuffix('\n\nОцените пожалуйста результат рекомендации от 0 до 5:')
-    assert len(output_text.split('\n')) == num_hubs
+    output_text = output_text.removeprefix(
+        "Наиболее подходящие хабы для данной статьи:\n\n"
+    )
+    output_text = output_text.removesuffix(
+        "\n\nОцените пожалуйста результат рекомендации от 0 до 5:"
+    )
+    assert len(output_text.split("\n")) == num_hubs
 
     # проверка файла на вход с неправильным расширением, кодировкой
     update = AsyncMock()
     context = AsyncMock()
     context.chat_data = dict()
     context.bot = BotMock()
-    file_path = 'test_input_extension.png'
-    with open(file_path, 'rb') as file:
-        response = requests.post('https://file.io/', files={'file': file})
+    file_path = "test_input_extension.png"
+    with open(file_path, "rb") as file:
+        response = requests.post("https://file.io/", files={"file": file})
     response = response.json()
-    update.message.document = response['link']
+    update.message.document = response["link"]
     await predict_file(update, context)
     update.message.reply_text.assert_called_once_with(
-        'Произошла ошибка, попробуйте ещё раз, проверьте, что вы отправляете текстовый файл (.txt)')
+        "Произошла ошибка, попробуйте ещё раз, проверьте, что вы отправляете текстовый файл (.txt)"
+    )
 
     # проверка рекомендации с файлом на вход
     update = AsyncMock()
     context = AsyncMock()
     context.chat_data = dict()
-    context.chat_data['num_hubs'] = 1
+    context.chat_data["num_hubs"] = 1
     context.bot = BotMock()
     update.message = MessageMock()
-    file_path = 'test_input_real.txt'
-    with open(file_path, 'rb') as file:
-        response = requests.post('https://file.io/', files={'file': file})
+    file_path = "test_input_real.txt"
+    with open(file_path, "rb") as file:
+        response = requests.post("https://file.io/", files={"file": file})
     response = response.json()
-    update.message.document = response['link']
+    update.message.document = response["link"]
     await predict_file(update, context)
-    num_hubs = context.chat_data.get('num_hubs', NUM_HUBS)
+    num_hubs = context.chat_data.get("num_hubs", NUM_HUBS)
     output_text = update.message.text
-    output_text = output_text.removeprefix('Наиболее подходящие хабы для данной статьи:\n\n')
-    output_text = output_text.removesuffix('\n\nОцените пожалуйста результат рекомендации от 0 до 5:')
-    assert len(output_text.split('\n')) == num_hubs
-    with open('test_input_real.txt', 'r', encoding='utf-8') as f_r:
+    output_text = output_text.removeprefix(
+        "Наиболее подходящие хабы для данной статьи:\n\n"
+    )
+    output_text = output_text.removesuffix(
+        "\n\nОцените пожалуйста результат рекомендации от 0 до 5:"
+    )
+    assert len(output_text.split("\n")) == num_hubs
+    with open("test_input_real.txt", "r", encoding="utf-8") as f_r:
         input_text = f_r.read()
     assert input_text == output_text
 
@@ -198,22 +224,30 @@ async def test_predict_file():
 @pytest.mark.asyncio
 async def test_button_click():
     s3_client = boto3.client(
-        service_name='s3',
-        endpoint_url='https://storage.yandexcloud.net',
+        service_name="s3",
+        endpoint_url="https://storage.yandexcloud.net",
         aws_access_key_id=s3_access_key,
-        aws_secret_access_key=s3_secret_key
+        aws_secret_access_key=s3_secret_key,
     )
     # проверка, что кнопки корректно записываются в статистику
-    feedback_before = json.loads(s3_client.get_object(Bucket=BUCKET, Key="feedback.json").get('Body').read())
+    feedback_before = json.loads(
+        s3_client.get_object(Bucket=BUCKET, Key="feedback.json")
+        .get("Body")
+        .read()
+    )
     update = AsyncMock()
     context = AsyncMock()
-    button = '4'
+    button = "4"
     update.callback_query.data = button
     await button_click(update, context)
-    feedback_after = json.loads(s3_client.get_object(Bucket=BUCKET, Key="feedback.json").get('Body').read())
-    s3_client.put_object(Bucket=BUCKET,
-                         Key="feedback.json",
-                         Body=json.dumps(feedback_before))  # возвращаем оригинальное значение
+    feedback_after = json.loads(
+        s3_client.get_object(Bucket=BUCKET, Key="feedback.json")
+        .get("Body")
+        .read()
+    )
+    s3_client.put_object(
+        Bucket=BUCKET, Key="feedback.json", Body=json.dumps(feedback_before)
+    )  # возвращаем оригинальное значение
     feedback_before[button] += 1
     assert feedback_after == feedback_before
 
@@ -221,30 +255,43 @@ async def test_button_click():
 @pytest.mark.asyncio
 async def test_rating():
     s3_client = boto3.client(
-        service_name='s3',
-        endpoint_url='https://storage.yandexcloud.net',
+        service_name="s3",
+        endpoint_url="https://storage.yandexcloud.net",
         aws_access_key_id=s3_access_key,
-        aws_secret_access_key=s3_secret_key
+        aws_secret_access_key=s3_secret_key,
     )
     # проверка холодного старта
-    feedback_orig = json.loads(s3_client.get_object(Bucket=BUCKET, Key="feedback.json").get('Body').read())
-    feedback_zero = {'0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0}
-    s3_client.put_object(Bucket=BUCKET, Key="feedback.json", Body=json.dumps(feedback_zero))
+    feedback_orig = json.loads(
+        s3_client.get_object(Bucket=BUCKET, Key="feedback.json")
+        .get("Body")
+        .read()
+    )
+    feedback_zero = {"0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0}
+    s3_client.put_object(
+        Bucket=BUCKET, Key="feedback.json", Body=json.dumps(feedback_zero)
+    )
     update = AsyncMock()
     context = AsyncMock()
     await rating(update, context)
-    s3_client.put_object(Bucket=BUCKET,
-                         Key="feedback.json",
-                         Body=json.dumps(feedback_orig))  # возвращаем оригинальное значение
-    message = 'Пока нету ни одного отзыва о рекомендациях, стань первым!'
+    s3_client.put_object(
+        Bucket=BUCKET, Key="feedback.json", Body=json.dumps(feedback_orig)
+    )  # возвращаем оригинальное значение
+    message = "Пока нету ни одного отзыва о рекомендациях, стань первым!"
     update.message.reply_text.assert_called_once_with(message)
 
     # проверка, что рейтинг корректно считается
     update = AsyncMock()
     context = AsyncMock()
     await rating(update, context)
-    feedback_rating = json.loads(s3_client.get_object(Bucket=BUCKET, Key="feedback.json").get('Body').read())
+    feedback_rating = json.loads(
+        s3_client.get_object(Bucket=BUCKET, Key="feedback.json")
+        .get("Body")
+        .read()
+    )
     num_feedbacks = sum([v for k, v in feedback_rating.items()])
-    rating_score = sum([int(k) * int(v) for k, v in feedback_rating.items()]) / num_feedbacks
-    message = f'Текущей рейтинг рекомендаций бота, основанный на {num_feedbacks} отзывах пользователей:\n{rating_score}'
+    rating_score = (
+        sum([int(k) * int(v) for k, v in feedback_rating.items()])
+        / num_feedbacks
+    )
+    message = f"Текущей рейтинг рекомендаций бота, основанный на {num_feedbacks} отзывах пользователей:\n{rating_score}"
     update.message.reply_text.assert_called_once_with(message)
